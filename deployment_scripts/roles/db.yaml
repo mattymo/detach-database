@@ -1,0 +1,8 @@
+meta:
+  description: 'Separated DB from controller'
+  has_primary: true
+  name: 'Database'
+name: db
+volumes_roles_mapping:
+  - allocate_size: min
+    id: os

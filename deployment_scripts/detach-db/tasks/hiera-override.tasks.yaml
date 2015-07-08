@@ -1,0 +1,10 @@
+- id: deploy-hiera-override
+  type: puppet
+  groups: [primary-controller, controller, primary-db, db]
+  requires: [globals]
+  required_for: [logging]
+  parameters:
+    puppet_manifest: /etc/puppet/modules/osnailyfacter/modular/detach-db/deploy_hiera_override.pp
+    puppet_modules: /etc/puppet/modules
+    timeout: 120
+
