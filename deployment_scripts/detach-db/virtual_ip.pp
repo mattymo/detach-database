@@ -9,8 +9,7 @@ $network_scheme              = hiera('network_scheme', {})
 if ( hiera('vip_management_cidr_netmask', false )){
   $vip_management_cidr_netmask = hiera('vip_management_cidr_netmask')
 } else {
-  $vip_management_cidr_netmask =
-netmask_to_cidr($primary_controller_nodes[0]['internal_netmask'])
+  $vip_management_cidr_netmask = netmask_to_cidr($primary_controller_nodes[0]['internal_netmask'])
 }
 
 $database_vip_data = {

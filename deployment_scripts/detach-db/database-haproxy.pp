@@ -14,8 +14,8 @@ if ($custom_mysql_setup_class in ['galera', 'percona', 'percona_packages']) {
     is_primary_controller => $is_primary_controller,
     server_names          => $mysqld_names,
     ipaddresses           => $mysqld_ipaddresses,
-    public_virtual_ip   => $database_vip,
-    internal_virtual_ip => $database_vip,
+    public_virtual_ip     => $database_vip,
+    internal_virtual_ip   => $database_vip,
   }
 }
 
