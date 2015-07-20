@@ -6,3 +6,5 @@ name: db
 volumes_roles_mapping:
   - allocate_size: min
     id: os
+  - allocate_size: all
+    id: image

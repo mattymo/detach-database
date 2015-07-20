@@ -1,6 +1,8 @@
 notice("MODULAR: deploy_hiera_override.pp")
 
-$detach_db_plugin = hiera('detach-db')
+$detach_db_plugin = hiera('detach-db', undef)
+if $detach_db_plugin {
+$network_metadata = hiera_hash('network_metadata')
 $settings_hash = parseyaml($detach_db_plugin["yaml_additional_config"])
 $nodes_hash = hiera('nodes')
 $management_vip = hiera('management_vip')
@@ -19,10 +21,12 @@ if hiera('role', 'none') =~ /^primary/ {
   $primary_controller = 'false'
 }
 
-$database_nodes_ips = nodes_with_roles($nodes_hash, ['primary-db',
-                                  'db'], 'internal_address')
-$database_nodes_names = nodes_with_roles($nodes_hash, ['primary-db',
-                                  'db'], 'name')
+#Set database_nodes values
+$database_nodes = get_nodes_hash_by_roles($network_metadata, ['primary-db', 'db'])
+echo($database_nodes)
+$database_address_map = get_node_to_ipaddr_map_by_network_role($database_nodes, 'mgmt/database')
+$database_nodes_ips = values($database_address_map)
+$database_nodes_names = keys($database_address_map)
 
 #TODO(mattymo): debug needing corosync_roles
 case hiera('role', 'none') {
@@ -30,6 +34,7 @@ case hiera('role', 'none') {
     $corosync_roles = ['primary-db','db']
     $deploy_vrouter = 'false'
     $mysql_enabled = 'true'
+    $corosync_nodes = $database_nodes
   }
   /controller/: {
     $deploy_vrouter = 'true'
@@ -37,36 +42,24 @@ case hiera('role', 'none') {
   }
   default: {
     $corosync_roles = ['primary-controller', 'controller']
+    $corosync_nodes = hiera('controllers')
   }
 }
-
-case hiera('role', 'none') {
-  /controller/: {
-#TODO(mattymo): Remote DB support without following hack
-#Uncomment to enable remote DB creation, but add mysql hash in db with host and password to settings
-#      include mysql
-#      file { "/etc/my.cnf":
-#        ensure => "present",
-#        content =>
-#        "[client]\nuser=root\nhost=${database_vip}\npassword=${settings_hash['remote_db_password']}\n",
-#        require => Class["Mysql"],
-#      }
-  }
-  default: {
-  }
-}
+#<%
+#@database_nodes.each do |dbnode|
+#%>  - <%= dbnode %>
 
 ###################
 $calculated_content = inline_template('
 primary_database: <%= @primary_database %>
 database_vip: <%= @database_vip %>
-<% if @database_nodes_ips -%>
+<% if @database_nodes -%>
+<% require "yaml" -%>
 database_nodes:
-<%
-@database_nodes_ips.each do |dbnode|
-%>  - <%= dbnode %>
+<%= YAML.dump(@database_nodes).sub(/--- *$/,"") %> 
 <% end -%>
 mysqld_ipaddresses:
+<% if @database_nodes_ips -%>
 <%
 @database_nodes_ips.each do |dbnode|
 %>  - <%= dbnode %>
@@ -82,7 +75,12 @@ mysqld_names:
 mysql:
   enabled: <%= @mysql_enabled %>
 primary_controller: <%= @primary_controller %>
-<% if @corosync_roles -%>
+<% if @corosync_nodes -%>
+<% require "yaml" -%>
+corosync_nodes:
+<%= YAML.dump(@corosync_nodes).sub(/--- *$/,"") %> 
+<% end -%>
+<% if @corosync_rodes -%>
 corosync_roles:
 <%
 @corosync_roles.each do |crole|
@@ -108,5 +106,7 @@ package {"ruby-deep-merge":
 file_line {"hiera.yaml":
   path  => '/etc/hiera.yaml',
   line  => ':merge_behavior: deeper',
+}
+
 }
 
