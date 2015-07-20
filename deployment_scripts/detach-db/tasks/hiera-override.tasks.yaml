@@ -1,6 +1,6 @@
 - id: deploy-hiera-override
   type: puppet
-  groups: [primary-controller, controller, primary-db, db]
+  groups: [primary-controller, controller, primary-db, db, cinder, cinder-vmware, compute, ceph-osd, zabbix-server, primary-mongo, mongo]
   requires: [globals]
   required_for: [logging]
   parameters:

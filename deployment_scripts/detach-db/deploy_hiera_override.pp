@@ -84,7 +84,7 @@ primary_controller: <%= @primary_controller %>
 corosync_nodes:
 <%= YAML.dump(@corosync_nodes).sub(/--- *$/,"") %> 
 <% end -%>
-<% if @corosync_rodes -%>
+<% if @corosync_roles -%>
 corosync_roles:
 <%
 @corosync_roles.each do |crole|
