@@ -1,6 +1,10 @@
 notice("MODULAR: deploy_hiera_override.pp")
 
 $detach_db_plugin = hiera('detach-db', undef)
+$hiera_dir = '/etc/hiera/override'
+$plugin_yaml = "detach_db.yaml"
+$plugin_name = "detach-db"
+
 if $detach_db_plugin {
 $network_metadata = hiera_hash('network_metadata')
 $settings_hash = parseyaml($detach_db_plugin["yaml_additional_config"])
@@ -94,7 +98,7 @@ deploy_vrouter: <%= @deploy_vrouter %>
 file {'/etc/hiera/override':
   ensure  => directory,
 } ->
-file { '/etc/hiera/override/plugins.yaml':
+file { "${hiera_dir}/${plugin_yaml}":
   ensure  => file,
   content => "${detach_db_plugin['yaml_additional_config']}\n${calculated_content}\n",
 }
@@ -103,10 +107,10 @@ package {"ruby-deep-merge":
   ensure  => 'installed',
 }
 
-file_line {"hiera.yaml":
+file_line {"${plugin_name}_hiera_override":
   path  => '/etc/hiera.yaml',
-  line  => ':merge_behavior: deeper',
+  line  => "  - override/${plugin_name}",
+  after => '  - override/module/%{calling_module}',
 }
 
 }
-
