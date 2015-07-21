@@ -2,7 +2,7 @@ notice("MODULAR: deploy_hiera_override.pp")
 
 $detach_db_plugin = hiera('detach-db', undef)
 $hiera_dir = '/etc/hiera/override'
-$plugin_yaml = "detach_db.yaml"
+$plugin_yaml = "detach-db.yaml"
 $plugin_name = "detach-db"
 
 if $detach_db_plugin {
