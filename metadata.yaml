@@ -1,9 +1,9 @@
 # Plugin name
-name: detach-db
+name: detach-database
 # Human-readable name for your plugin
 title: Separate DB from controller
 # Plugin version
-version: '1.0.1'
+version: '1.1.0'
 # Description
 description: Creates separate Database role for deploying
 # Required fuel version
