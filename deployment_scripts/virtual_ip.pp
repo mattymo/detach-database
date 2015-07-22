@@ -1,4 +1,4 @@
-notice('MODULAR: detach-db/virtual_ip.pp')
+notice('MODULAR: detach-database/virtual_ip.pp')
 
 $internal_int                = hiera('internal_int')
 $public_int                  = hiera('public_int',  undef)
