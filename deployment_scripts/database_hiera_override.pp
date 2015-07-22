@@ -6,51 +6,51 @@ $plugin_name = 'detach-database'
 $plugin_yaml = "${plugin_name}.yaml"
 
 if $detach_database_plugin {
-$network_metadata = hiera_hash('network_metadata')
-$settings_hash = parseyaml($detach_database_plugin["yaml_additional_config"])
-$nodes_hash = hiera('nodes')
-$management_vip = hiera('management_vip')
-$database_vip = pick($settings_hash['remote_database'],hiera('management_database_vip'))
-
-###################
-if hiera('role', 'none') == 'primary-database' {
-  $primary_database = 'true'
-} else {
-  $primary_database = 'false'
-}
-
-if hiera('role', 'none') =~ /^primary/ {
-  $primary_controller = 'true'
-} else {
-  $primary_controller = 'false'
-}
-
-#Set database_nodes values
-$database_nodes = get_nodes_hash_by_roles($network_metadata, ['primary-database', 'database'])
-$database_address_map = get_node_to_ipaddr_map_by_network_role($database_nodes, 'mgmt/database')
-$database_nodes_ips = values($database_address_map)
-$database_nodes_names = keys($database_address_map)
-
-#TODO(mattymo): debug needing corosync_roles
-case hiera('role', 'none') {
-  /database/: {
-    $corosync_roles = ['primary-database','database']
-    $deploy_vrouter = 'false'
-    $mysql_enabled = 'true'
-    $corosync_nodes = $database_nodes
+  $network_metadata = hiera_hash('network_metadata')
+  if ! $network_metadata['vips']['database'] {
+    fail ('Database VIP is not defined')
   }
-  /controller/: {
-    $mysql_enabled = 'false'
+  $settings_hash = parseyaml($detach_database_plugin["yaml_additional_config"])
+  $nodes_hash = hiera('nodes')
+  $management_vip = hiera('management_vip')
+  $database_vip =
+  pick($settings_hash['remote_database'],$network_metadata['vips']['database']['ipaddr'])
+  
+  ###################
+  if hiera('role', 'none') == 'primary-database' {
+    $primary_database = 'true'
+  } else {
+    $primary_database = 'false'
   }
-  default: {
+  
+  if hiera('role', 'none') =~ /^primary/ {
+    $primary_controller = 'true'
+  } else {
+    $primary_controller = 'false'
   }
-}
-#<%
-#@database_nodes.each do |databasenode|
-#%>  - <%= databasenode %>
-
-###################
-$calculated_content = inline_template('
+  
+  #Set database_nodes values
+  $database_nodes = get_nodes_hash_by_roles($network_metadata, ['primary-database', 'database'])
+  $database_address_map = get_node_to_ipaddr_map_by_network_role($database_nodes, 'mgmt/database')
+  $database_nodes_ips = values($database_address_map)
+  $database_nodes_names = keys($database_address_map)
+  
+  #TODO(mattymo): debug needing corosync_roles
+  case hiera('role', 'none') {
+    /database/: {
+      $corosync_roles = ['primary-database','database']
+      $deploy_vrouter = 'false'
+      $mysql_enabled = 'true'
+      $corosync_nodes = $database_nodes
+    }
+    /controller/: {
+      $mysql_enabled = 'false'
+    }
+    default: {
+    }
+  }
+  ###################
+  $calculated_content = inline_template('
 primary_database: <%= @primary_database %>
 database_vip: <%= @database_vip %>
 <% if @database_nodes -%>
@@ -90,23 +90,23 @@ corosync_roles:
 deploy_vrouter: <%= @deploy_vrouter %>
 ')
 
-###################
-file {'/etc/hiera/override':
-  ensure  => directory,
-} ->
-file { "${hiera_dir}/${plugin_yaml}":
-  ensure  => file,
-  content => "${detach_database_plugin['yaml_additional_config']}\n${calculated_content}\n",
-}
-
-package {"ruby-deep-merge":
-  ensure  => 'installed',
-}
-
-file_line {"${plugin_name}_hiera_override":
-  path  => '/etc/hiera.yaml',
-  line  => "  - override/${plugin_name}",
-  after => '  - override/module/%{calling_module}',
-}
+  ###################
+  file {'/etc/hiera/override':
+    ensure  => directory,
+  } ->
+  file { "${hiera_dir}/${plugin_yaml}":
+    ensure  => file,
+    content => "${detach_database_plugin['yaml_additional_config']}\n${calculated_content}\n",
+  }
+  
+  package {"ruby-deep-merge":
+    ensure  => 'installed',
+  }
+  
+  file_line {"${plugin_name}_hiera_override":
+    path  => '/etc/hiera.yaml',
+    line  => "  - override/${plugin_name}",
+    after => '  - override/module/%{calling_module}',
+  }
 
 }
