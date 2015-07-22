@@ -1,19 +1,19 @@
 notice("MODULAR: deploy_hiera_override.pp")
 
-$detach_db_plugin = hiera('detach-db', undef)
+$detach_database_plugin = hiera('detach-database', undef)
 $hiera_dir = '/etc/hiera/override'
-$plugin_yaml = "detach-db.yaml"
-$plugin_name = "detach-db"
+$plugin_name = 'detach-database'
+$plugin_yaml = "${plugin_name}.yaml"
 
-if $detach_db_plugin {
+if $detach_database_plugin {
 $network_metadata = hiera_hash('network_metadata')
-$settings_hash = parseyaml($detach_db_plugin["yaml_additional_config"])
+$settings_hash = parseyaml($detach_database_plugin["yaml_additional_config"])
 $nodes_hash = hiera('nodes')
 $management_vip = hiera('management_vip')
-$database_vip = pick($settings_hash['remote_db'],hiera('management_database_vip'))
+$database_vip = pick($settings_hash['remote_database'],hiera('management_database_vip'))
 
 ###################
-if hiera('role', 'none') == 'primary-db' {
+if hiera('role', 'none') == 'primary-database' {
   $primary_database = 'true'
 } else {
   $primary_database = 'false'
@@ -26,32 +26,28 @@ if hiera('role', 'none') =~ /^primary/ {
 }
 
 #Set database_nodes values
-$database_nodes = get_nodes_hash_by_roles($network_metadata, ['primary-db', 'db'])
-echo($database_nodes)
+$database_nodes = get_nodes_hash_by_roles($network_metadata, ['primary-database', 'database'])
 $database_address_map = get_node_to_ipaddr_map_by_network_role($database_nodes, 'mgmt/database')
 $database_nodes_ips = values($database_address_map)
 $database_nodes_names = keys($database_address_map)
 
 #TODO(mattymo): debug needing corosync_roles
 case hiera('role', 'none') {
-  /db/: {
-    $corosync_roles = ['primary-db','db']
+  /database/: {
+    $corosync_roles = ['primary-database','database']
     $deploy_vrouter = 'false'
     $mysql_enabled = 'true'
     $corosync_nodes = $database_nodes
   }
   /controller/: {
-    $deploy_vrouter = 'true'
     $mysql_enabled = 'false'
   }
   default: {
-    $corosync_roles = ['primary-controller', 'controller']
-    $corosync_nodes = hiera('controllers')
   }
 }
 #<%
-#@database_nodes.each do |dbnode|
-#%>  - <%= dbnode %>
+#@database_nodes.each do |databasenode|
+#%>  - <%= databasenode %>
 
 ###################
 $calculated_content = inline_template('
@@ -65,15 +61,15 @@ database_nodes:
 mysqld_ipaddresses:
 <% if @database_nodes_ips -%>
 <%
-@database_nodes_ips.each do |dbnode|
-%>  - <%= dbnode %>
+@database_nodes_ips.each do |databasenode|
+%>  - <%= databasenode %>
 <% end -%>
 <% end -%>
 <% if @database_nodes_names -%>
 mysqld_names:
 <%
-@database_nodes_names.each do |dbnode|
-%>  - <%= dbnode %>
+@database_nodes_names.each do |databasenode|
+%>  - <%= databasenode %>
 <% end -%>
 <% end -%>
 mysql:
@@ -100,7 +96,7 @@ file {'/etc/hiera/override':
 } ->
 file { "${hiera_dir}/${plugin_yaml}":
   ensure  => file,
-  content => "${detach_db_plugin['yaml_additional_config']}\n${calculated_content}\n",
+  content => "${detach_database_plugin['yaml_additional_config']}\n${calculated_content}\n",
 }
 
 package {"ruby-deep-merge":
