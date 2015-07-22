@@ -8,37 +8,36 @@ $plugin_yaml = "${plugin_name}.yaml"
 if $detach_database_plugin {
   $network_metadata = hiera_hash('network_metadata')
   if ! $network_metadata['vips']['database'] {
-    fail ('Database VIP is not defined')
+    fail('Database VIP is not defined')
   }
   $settings_hash = parseyaml($detach_database_plugin["yaml_additional_config"])
   $nodes_hash = hiera('nodes')
   $management_vip = hiera('management_vip')
-  $database_vip =
-  pick($settings_hash['remote_database'],$network_metadata['vips']['database']['ipaddr'])
-  
+  $database_vip = pick($settings_hash['remote_database'],$network_metadata['vips']['database']['ipaddr'])
+
   ###################
-  if hiera('role', 'none') == 'primary-database' {
+  if hiera('role', 'none') == 'primary-standalone-database' {
     $primary_database = 'true'
   } else {
     $primary_database = 'false'
   }
-  
+
   if hiera('role', 'none') =~ /^primary/ {
     $primary_controller = 'true'
   } else {
     $primary_controller = 'false'
   }
-  
+
   #Set database_nodes values
-  $database_nodes = get_nodes_hash_by_roles($network_metadata, ['primary-database', 'database'])
+  $database_nodes = get_nodes_hash_by_roles($network_metadata, ['primary-standalone-database', 'standalone-database'])
   $database_address_map = get_node_to_ipaddr_map_by_network_role($database_nodes, 'mgmt/database')
   $database_nodes_ips = values($database_address_map)
   $database_nodes_names = keys($database_address_map)
-  
+
   #TODO(mattymo): debug needing corosync_roles
   case hiera('role', 'none') {
     /database/: {
-      $corosync_roles = ['primary-database','database']
+      $corosync_roles = ['primary-standalone-database','standalone-database']
       $deploy_vrouter = 'false'
       $mysql_enabled = 'true'
       $corosync_nodes = $database_nodes
@@ -56,7 +55,7 @@ database_vip: <%= @database_vip %>
 <% if @database_nodes -%>
 <% require "yaml" -%>
 database_nodes:
-<%= YAML.dump(@database_nodes).sub(/--- *$/,"") %> 
+<%= YAML.dump(@database_nodes).sub(/--- *$/,"") %>
 <% end -%>
 mysqld_ipaddresses:
 <% if @database_nodes_ips -%>
@@ -78,7 +77,7 @@ primary_controller: <%= @primary_controller %>
 <% if @corosync_nodes -%>
 <% require "yaml" -%>
 corosync_nodes:
-<%= YAML.dump(@corosync_nodes).sub(/--- *$/,"") %> 
+<%= YAML.dump(@corosync_nodes).sub(/--- *$/,"") %>
 <% end -%>
 <% if @corosync_roles -%>
 corosync_roles:
@@ -98,11 +97,11 @@ deploy_vrouter: <%= @deploy_vrouter %>
     ensure  => file,
     content => "${detach_database_plugin['yaml_additional_config']}\n${calculated_content}\n",
   }
-  
+
   package {"ruby-deep-merge":
     ensure  => 'installed',
   }
-  
+
   file_line {"${plugin_name}_hiera_override":
     path  => '/etc/hiera.yaml',
     line  => "  - override/${plugin_name}",

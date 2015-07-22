@@ -1,8 +1,8 @@
 ##############################################
 # Deployment groups
-- id: primary-database
+- id: primary-standalone-database
   type: group
-  role: [primary-database]
+  role: [primary-standalone-database]
   requires: [deploy_start]
   required_for: [deploy_end, primary-controller, controller]
   tasks: [fuel_pkgs, hiera, globals, tools, logging, netconfig,
@@ -11,10 +11,10 @@
     strategy:
       type: one_by_one
 
-- id: database
+- id: standalone-database
   type: group
-  role: [database]
-  requires: [deploy_start, primary-database, primary-controller, controller]
+  role: [standalone-database]
+  requires: [deploy_start, primary-standalone-database, primary-controller, controller]
   required_for: [deploy_end]
   tasks: [fuel_pkgs, hiera, globals, tools, logging, netconfig,
     hosts, firewall, deploy_start, cluster, database-virtual-ip, cluster-haproxy, task-database]
@@ -25,7 +25,7 @@
 # Deployment tasks
 - id: database-haproxy
   type: puppet
-  groups: [primary-database, database]
+  groups: [primary-standalone-database,standalone-database]
   required_for: [task-database, deploy_end]
   requires: [deploy_start, database-virtual-ip, cluster-haproxy]
   parameters:
@@ -35,7 +35,7 @@
 
 - id: database-virtual-ip
   type: puppet
-  groups: [primary-database, database]
+  groups: [primary-standalone-database, standalone-database]
   required_for: [deploy_end]
   requires: [cluster]
   parameters:
@@ -45,7 +45,7 @@
 
 - id: task-database
   type: puppet
-  role: [primary-database, database]
+  role: [primary-standalone-database, standalone-database]
   requires: [hosts, firewall]
   requires: [database-haproxy, database-virtual-ip]
   parameters:
@@ -59,7 +59,7 @@
 
 - id: database-hiera-override
   type: puppet
-  groups: [primary-controller, controller, primary-database, database, cinder, cinder-vmware, compute, ceph-osd, zabbix-server, primary-mongo, mongo]
+  groups: [primary-controller, controller, primary-standalone-database, standalone-database, cinder, cinder-vmware, compute, ceph-osd, zabbix-server, primary-mongo, mongo]
   requires: [globals]
   required_for: [logging]
   parameters:
