@@ -59,7 +59,11 @@
 
 - id: database-hiera-override
   type: puppet
-  groups: [primary-controller, controller, primary-standalone-database, standalone-database, cinder, cinder-vmware, compute, ceph-osd, zabbix-server, primary-mongo, mongo]
+  groups: [primary-controller, controller, primary-standalone-database,
+    standalone-database, cinder, cinder-vmware, compute, ceph-osd, 
+    zabbix-server, primary-mongo, mongo,
+    primary-standalone-keystone, standalone-keystone,
+    primary-standalone-rabbitmq, standalone-rabbitmq]
   requires: [globals]
   required_for: [logging]
   parameters:
