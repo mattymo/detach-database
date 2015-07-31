@@ -1,4 +1,4 @@
-notice("MODULAR: deploy_hiera_override.pp")
+notice('MODULAR: detach-database/database_hiera_override.pp')
 
 $detach_database_plugin = hiera('detach-database', undef)
 $hiera_dir = '/etc/hiera/override'
@@ -7,43 +7,48 @@ $plugin_yaml = "${plugin_name}.yaml"
 
 if $detach_database_plugin {
   $network_metadata = hiera_hash('network_metadata')
-  if ! $network_metadata['vips']['database'] {
+  if ! is_ip_address($network_metadata['vips']['database']) {
     fail('Database VIP is not defined')
   }
-  $settings_hash = parseyaml($detach_database_plugin["yaml_additional_config"])
+  $yaml_additional_config = pick($detach_database_plugin['yaml_additional_config'], {})
+  $settings_hash = parseyaml($yaml_additional_config)
   $nodes_hash = hiera('nodes')
   $management_vip = hiera('management_vip')
   $database_vip = pick($settings_hash['remote_database'],$network_metadata['vips']['database']['ipaddr'])
 
-  ###################
-  if hiera('role', 'none') == 'primary-standalone-database' {
-    $primary_database = 'true'
-  } else {
-    $primary_database = 'false'
-  }
-
-  if hiera('role', 'none') =~ /^primary/ {
-    $primary_controller = 'true'
-  } else {
-    $primary_controller = 'false'
-  }
-
   #Set database_nodes values
-  $database_nodes = get_nodes_hash_by_roles($network_metadata, ['primary-standalone-database', 'standalone-database'])
+  $database_roles = [ 'primary-standalone-database', 'standalone-database' ]
+  $database_nodes = get_nodes_hash_by_roles($network_metadata, $database_roles)
   $database_address_map = get_node_to_ipaddr_map_by_network_role($database_nodes, 'mgmt/database')
   $database_nodes_ips = values($database_address_map)
   $database_nodes_names = keys($database_address_map)
 
+  ###################
+  case hiera('role', 'none') {
+    'primary-standalone-database': {
+      $primary_database = true
+      $primary_controller = false
+    }
+    /^primary/: {
+      $primary_database = false
+      $primary_controller = true
+    }
+    default: {
+      $primary_database = false
+      $primary_controller = false
+    }
+  }
+
   #TODO(mattymo): debug needing corosync_roles
   case hiera('role', 'none') {
     /database/: {
-      $corosync_roles = ['primary-standalone-database','standalone-database']
-      $deploy_vrouter = 'false'
-      $mysql_enabled = 'true'
+      $corosync_roles = $database_roles
+      $deploy_vrouter = false
+      $mysql_enabled = true
       $corosync_nodes = $database_nodes
     }
     /controller/: {
-      $mysql_enabled = 'false'
+      $mysql_enabled = false
     }
     default: {
     }
@@ -98,7 +103,7 @@ deploy_vrouter: <%= @deploy_vrouter %>
     content => "${detach_database_plugin['yaml_additional_config']}\n${calculated_content}\n",
   }
 
-  package {"ruby-deep-merge":
+  package {'ruby-deep-merge':
     ensure  => 'installed',
   }
 
