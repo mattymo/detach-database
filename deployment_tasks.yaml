@@ -60,7 +60,7 @@
 - id: database-hiera-override
   type: puppet
   groups: [primary-controller, controller, primary-standalone-database,
-    standalone-database, cinder, cinder-vmware, compute, ceph-osd, 
+    standalone-database, cinder, cinder-vmware, compute, ceph-osd,
     zabbix-server, primary-mongo, mongo,
     primary-standalone-keystone, standalone-keystone]
   requires: [globals]
