@@ -7,7 +7,7 @@ $plugin_yaml = "${plugin_name}.yaml"
 
 if $detach_database_plugin {
   $network_metadata = hiera_hash('network_metadata')
-  if ! is_ip_address($network_metadata['vips']['database']) {
+  if ! $network_metadata['vips']['database']) {
     fail('Database VIP is not defined')
   }
   $yaml_additional_config = pick($detach_database_plugin['yaml_additional_config'], {})
