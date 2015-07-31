@@ -61,8 +61,7 @@
   type: puppet
   groups: [primary-controller, controller, primary-standalone-database,
     standalone-database, cinder, cinder-vmware, compute, ceph-osd,
-    zabbix-server, primary-mongo, mongo,
-    primary-standalone-keystone, standalone-keystone]
+    zabbix-server, primary-mongo, mongo]
   requires: [globals]
   required_for: [logging]
   parameters:
