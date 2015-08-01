@@ -27,7 +27,7 @@ if $detach_database_plugin {
   case hiera('role', 'none') {
     'primary-standalone-database': {
       $primary_database = true
-      $primary_controller = false
+      $primary_controller = true
     }
     /^primary/: {
       $primary_database = false
