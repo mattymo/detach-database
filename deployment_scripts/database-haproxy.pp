@@ -17,5 +17,12 @@ if ($custom_mysql_setup_class in ['galera', 'percona', 'percona_packages']) {
     public_virtual_ip     => $database_vip,
     internal_virtual_ip   => $database_vip,
   }
+
+  #FIXME(mattymo): top level haproxy stats class doesn't listen on this VIP
+  class { '::openstack::ha::stats':
+    internal_virtual_ip => $database_vip,
+    public_virtual_ip   => $database_vip,
+  }
+
 }
 
