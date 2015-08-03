@@ -13,3 +13,4 @@
        - name: "database"
          # Optional linux namespace for VIP
          namespace: "haproxy"
+         alias: "database"
