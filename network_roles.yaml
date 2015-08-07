@@ -14,3 +14,6 @@
          # Optional linux namespace for VIP
          namespace: "haproxy"
          alias: "database"
+         node_roles:
+           - "primary-standalone-database"
+           - "standalone-database"
