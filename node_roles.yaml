@@ -7,3 +7,7 @@ standalone-database:
   conflicts:
     - controller
     - compute
+  limits:
+    min: 1
+  update_required:
+    - standalone-database
