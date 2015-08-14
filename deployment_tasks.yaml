@@ -27,9 +27,10 @@
 # Deployment tasks
 - id: database-haproxy
   type: puppet
-  groups: [primary-standalone-database,standalone-database]
+  groups: [primary-standalone-database, standalone-database]
   required_for: [task-database, deploy_end]
-  requires: [deploy_start, database-virtual-ip, cluster-haproxy]
+  requires: [deploy_start, database-virtual-ip, cluster-haproxy,
+    openstack-haproxy-stats]
   parameters:
     puppet_manifest: "database-haproxy.pp"
     puppet_modules: "/etc/puppet/modules"
